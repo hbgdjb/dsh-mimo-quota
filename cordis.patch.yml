@@ -1,0 +1,13 @@
+# Insert the usage-panel bundle row. `config` is passed to apply(ctx, config)
+# unvalidated; leave it empty for defaults (domestic CNY pricing), or override:
+#   config:
+#     storageFile: <path>   # usage JSON location (default: this profile directory)
+#     currency: '¥'         # display symbol
+#     retentionDays: 90     # record retention window
+#     pricing:              # per million tokens, merged over the built-in table
+#       my-model: { input: 1.0, hit: 0.01, output: 2.0, cw: 0 }
+# Storage is auto-located in the profile directory; only set storageFile to
+# move it. Records rebuild from the session event logs at every start.
+- insert:
+    - id: mimo-quota
+      name: '@local/mimo-quota'
