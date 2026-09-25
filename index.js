@@ -353,6 +353,7 @@ export function apply(ctx, config) {
   // rebuilt from disk at start and extended live through the same fold.
   const stepRec = new Map(); // sessionId -> Map<`${turn}:${step}`, record>
   const fileCounts = new Map(); // sessionId -> events folded from the log file
+  const fileRev = new Map(); // sessionId -> `${mtime}-${size}` at last read
   const liveStates = new Map(); // Session object -> { cursor, model, provider }
 
   function loadPricingFile() {
@@ -572,7 +573,7 @@ export function apply(ctx, config) {
         const buf = readFileSync(t.filePath);
         text = t.filePath.endsWith('.zstd') ? decompressSessionLog(buf) : buf.toString('utf8');
       } catch {}
-      if (text) texts.push({ id: t.id, text });
+      if (text) texts.push({ id: t.id, text, filePath: t.filePath });
     }
     if (!texts.length) return;
     const prior = records;
@@ -597,6 +598,10 @@ export function apply(ctx, config) {
         foldEvent(item.id, bucket, st, ev);
       }
       fileCounts.set(item.id, count);
+      try {
+        const st = statSync(item.filePath);
+        fileRev.set(item.id, `${Math.floor(st.mtimeMs)}-${st.size}`);
+      } catch {}
     }
     if (!records.length) records = prior;
     records.sort((a, b) => a.ts - b.ts);
@@ -607,6 +612,58 @@ export function apply(ctx, config) {
   try {
     rebuildFromEvents();
   } catch {}
+
+  // Version-proof catch-up: re-fold any session log whose file changed since
+  // the last read. Runs on a timer and before every stats response, so usage
+  // never depends on the live event contract surviving harness upgrades.
+  // Re-folding is idempotent: the same turn:step replaces its record in place.
+  function pollSessionFiles() {
+    const targets = discoverSessionFiles();
+    let changed = false;
+    for (const t of targets) {
+      let rev = '';
+      try {
+        const st = statSync(t.filePath);
+        rev = `${Math.floor(st.mtimeMs)}-${st.size}`;
+      } catch {
+        continue;
+      }
+      if (fileRev.get(t.id) === rev) continue;
+      let text = '';
+      try {
+        const buf = readFileSync(t.filePath);
+        text = t.filePath.endsWith('.zstd') ? decompressSessionLog(buf) : buf.toString('utf8');
+      } catch {}
+      if (!text) continue;
+      const bucket = bucketFor(t.id);
+      const st2 = { model: '', provider: '' };
+      let count = 0;
+      for (const line of text.split('\n')) {
+        const s = line.trim();
+        if (!s) continue;
+        let ev;
+        try {
+          ev = JSON.parse(s);
+        } catch {
+          continue;
+        }
+        if (!ev || typeof ev.type !== 'string') continue;
+        if (ev.type !== 'session') count++;
+        foldEvent(t.id, bucket, st2, ev);
+      }
+      fileCounts.set(t.id, count);
+      fileRev.set(t.id, rev);
+      changed = true;
+    }
+    if (changed) scheduleSave();
+  }
+
+  const pollTimer = setInterval(() => {
+    try {
+      pollSessionFiles();
+    } catch {}
+  }, 60000);
+  if (pollTimer.unref) pollTimer.unref();
 
   // Extend the same fold live; the cursor starts at the file watermark so an
   // event is never counted twice across restart or reload boundaries.
@@ -863,6 +920,9 @@ export function apply(ctx, config) {
         try {
           runImport();
         } catch {}
+        try {
+          pollSessionFiles();
+        } catch {}
         const payload = buildStats(Math.min(from, to), Math.max(from, to), model, granularity, scope);
         try {
           payload.models = await modelChoices(payload.models);
@@ -923,6 +983,7 @@ export function apply(ctx, config) {
 
   ctx.effect(() => () => {
     disposed = true;
+    clearInterval(pollTimer);
     if (saveTimer) {
       clearTimeout(saveTimer);
       saveTimer = null;
