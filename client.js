@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-  id: '@local/mimo-quota',
+  id: 'dsh-mimo-quota',
   factory(require) {
     const React = require('react');
     const h = React.createElement;
@@ -138,7 +138,7 @@ window.__ModuleLoader__.load({
     };
 
     const CSS = `
-.mqp-page{box-sizing:border-box;min-height:100%;padding:22px 26px 34px;background:var(--dsw-alias-bg-overlay);color:var(--dsw-alias-label-primary);font-family:ui-rounded,'Segoe UI Variable Text','Segoe UI','PingFang SC','Microsoft YaHei UI',system-ui,-apple-system,sans-serif;font-size:14px;font-variant-numeric:tabular-nums}
+.mqp-page{box-sizing:border-box;width:100%;min-width:0;height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;--dsh-scrollbar-width:9px;--dsh-scrollbar-thumb-border:2px;padding:22px 26px 34px;background:var(--dsw-alias-bg-overlay);color:var(--dsw-alias-label-primary);font-family:ui-rounded,'Segoe UI Variable Text','Segoe UI','PingFang SC','Microsoft YaHei UI',system-ui,-apple-system,sans-serif;font-size:14px;font-variant-numeric:tabular-nums}
 .mqp-page *{box-sizing:border-box}
 .mqp-mono{font-family:'JetBrains Mono','Cascadia Mono',ui-monospace,Consolas,'Courier New',monospace;font-variant-numeric:tabular-nums}
 .mqp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}

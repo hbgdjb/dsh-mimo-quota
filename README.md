@@ -1,6 +1,6 @@
 # MIMO Quota Panel · 小米 MIMO 额度统计面板
 
-装上即用，零配置：从会话事件日志逐调用自动记账（真实时间戳、全历史、实时增量），一屏展示 Token 用量、消费金额、请求次数、趋势波形、模型构成，支持按模型 / 粒度 / 时间范围 / 项目·对话 统计切换。内置可编辑定价，DeepSeek 峰谷价按记录时间自动套算，小米全系牌价开箱即用。
+DeepSeek Harness Web 端的实时用量面板插件：Token 用量、消费金额、API 请求数、输入 / 输出 tokens、趋势图与模型构成；支持模型、粒度、时间范围、统计范围（项目 / 对话）切换，30 秒自动刷新与手动刷新，内置可编辑定价系统与 DeepSeek 分时段参考价。
 
 ## 环境要求
 
@@ -45,11 +45,22 @@ npm pack --pack-destination dist
 
 市场安装优先级：**经仓库验证的 npm 包 → 作者 GitHub Release 预构建 tarball → 整仓 GitHub 源码**。因此：
 
-1. 把 `package.json` 的 `name` 改成可发布的公共名（如 `dsh-mimo-quota` 或你的 scope），发布时移除 `private`
+1. `name` 已为公共名 `dsh-mimo-quota`（无 `private`）；如换 scope 在此改名（客户端注册 id 与包名必须一致）
 2. 补齐 `repository` / `homepage` / `bugs`，打 tag `v<version>`
 3. 方式 A：`npm publish`（无 scope 或你持有的 scope）
 4. 方式 B：GitHub Release 挂 `npm pack` 产出的 `.tgz` 作为预构建资产（安装最快、无需构建脚本）
 5. 在市场提交目录映射（npm 包名或 GitHub 仓库地址）
+
+## 更新记录
+
+### v1.1.2（2026-10-07）
+- **修复 DSH 0.2 桌面端"本页面的插件未能完成同步"**：client 模块注册 id 由 `@local/mimo-quota` 更正为 `dsh-mimo-quota`（`__ModuleLoader__.load` 的 id 必须与包名一致，否则报 `loaded without registering`）
+- **修复 0.2 布局下面板内容被裁切、无法滚动**：`.mqp-page` 适配新根容器契约（`height:100%` + `overflow-y:auto` + `scrollbar-gutter:stable`，与官方 TaskManagerPage 同款）
+- **修复 GitHub 安装后宿主 fiber 无法解析**：包内 `cordis.patch.yml` 行名（模块说明符）由 `@local/mimo-quota` 更正为 `dsh-mimo-quota`（原报 `ERR_MODULE_NOT_FOUND`）
+- `package.json`：`name` 统一为 `dsh-mimo-quota`、补 `repository` / `homepage` / `bugs`
+
+### v1.1.1（基线）
+- 会话事件日志逐调用记账（重建 + 实时 + 60s 文件轮询三通道）、DeepSeek 分时段峰谷价、存储自动定位 profile、可编辑定价与统计范围。
 
 ## 免责声明
 

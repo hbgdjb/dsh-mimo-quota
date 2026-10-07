@@ -10,4 +10,4 @@
 # move it. Records rebuild from the session event logs at every start.
 - insert:
     - id: mimo-quota
-      name: '@local/mimo-quota'
+      name: 'dsh-mimo-quota'
